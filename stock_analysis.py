@@ -3,6 +3,8 @@ import pandas as pd
 import yfinance as yf
 import datetime
 import logging
+import os
+import csv
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
