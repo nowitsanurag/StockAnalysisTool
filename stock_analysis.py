@@ -30,21 +30,33 @@ def calculate_stock_metrics(data):
         return None, None, None, None, None, None
 
 def process_stock(symbol, period, interval):
-    data = download_stock_data(symbol, period, interval)
-    return calculate_stock_metrics(data)
+    try:
+        # Try with .NS suffix
+        data = download_stock_data(symbol + '.NS', period, interval)
+        if data is None or data.empty:
+            # If no data, try with -SM.NS suffix
+            data = download_stock_data(symbol + '-SM.NS', period, interval)
+        return calculate_stock_metrics(data)
+    except Exception as e:
+        logging.error(f"Error processing data for {symbol}: {e}")
+        return None, None, None, None, None, None
+
+
 
 def main():
     readStockCSV = pd.read_csv('allStocks.csv')
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    output_file = f'stockMarketResults_{current_date}.csv'
 
-    results_df = pd.DataFrame(columns=['Symbol', 'Maximum Close', 'Minimum Close', 'Current Close', 'Max-Min %', 'Current-Max %', 'Current-Min %', 'Date'])
+    # Check if the file already exists
+    file_exists = os.path.isfile(output_file)
 
     for symbol in readStockCSV['Symbol']:
         max_close, min_close, cur_close, mm_percent, cm_percent, cmin_percent = process_stock(symbol, '1y', '1d')
 
         if max_close is not None:
             new_row = {
-                'Symbol': symbol, 
+                'Symbol': symbol,
                 'Maximum Close': max_close, 
                 'Minimum Close': min_close, 
                 'Current Close': cur_close, 
@@ -53,12 +65,18 @@ def main():
                 'Current-Min %': cmin_percent, 
                 'Date': current_date
             }
-            results_df = pd.concat([results_df, pd.DataFrame([new_row])], ignore_index=True)
-
+            # Append the new row to the CSV file
+            with open(output_file, 'a', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=new_row.keys())
+                
+                # Write header only if the file is being created for the first time
+                if not file_exists:
+                    writer.writeheader()
+                    file_exists = True
+                
+                writer.writerow(new_row)
         else:
             logging.info(f"No data for {symbol}")
-
-    results_df.to_csv(f'stockMarketResults_{current_date}.csv', index=False)
 
 if __name__ == "__main__":
     main()
