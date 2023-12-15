@@ -53,7 +53,8 @@ def main():
                 'Current-Min %': cmin_percent, 
                 'Date': current_date
             }
-            results_df = results_df.append(new_row, ignore_index=True)
+            results_df = pd.concat([results_df, pd.DataFrame([new_row])], ignore_index=True)
+
         else:
             logging.info(f"No data for {symbol}")
 
